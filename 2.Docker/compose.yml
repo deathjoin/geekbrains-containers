@@ -1,0 +1,29 @@
+services: 
+  db: 
+    environment: 
+      MYSQL_DATABASE: exampledb
+      MYSQL_PASSWORD: examplepass
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+      MYSQL_USER: exampleuser
+    image: "mysql:5.7"
+    restart: always
+    volumes: 
+      - "db:/var/lib/mysql"
+  wordpress: 
+    environment: 
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: exampledb
+      WORDPRESS_DB_PASSWORD: examplepass
+      WORDPRESS_DB_USER: exampleuser
+    image: wordpress
+    depends_on: 
+      - db
+    ports: 
+      - "8080:80"
+    restart: always
+    volumes: 
+      - "wordpress:/var/www/html"
+version: "3.3"
+volumes: 
+  db: ~
+  wordpress: ~
