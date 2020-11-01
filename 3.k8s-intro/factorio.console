@@ -1,0 +1,57 @@
+[join@localhost 3.k8s-intro]$ vim factorio.yaml
+[join@localhost 3.k8s-intro]$ k apply -f factorio.yaml
+[join@localhost 3.k8s-intro]$ k get svc
+^[[ANAME               TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)           AGE
+factorio-svc-tcp   LoadBalancer   10.254.232.37    <pending>     27015:30949/TCP   3m24s
+factorio-svc-upd   LoadBalancer   10.254.117.222   <pending>     34197:30902/UDP   3m24s
+kubernetes         ClusterIP      10.254.0.1       <none>        443/TCP           4d1h
+[join@localhost 3.k8s-intro]$ k describe svc factorio-svc-upd
+Name:                     factorio-svc-upd
+Namespace:                default
+Labels:                   run=factorio
+Annotations:              <none>
+Selector:                 run=factorio
+Type:                     LoadBalancer
+IP:                       10.254.117.222
+Port:                     <unset>  34197/UDP
+TargetPort:               34197/UDP
+NodePort:                 <unset>  30902/UDP
+Endpoints:                10.100.90.130:34197
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:
+  Type     Reason                  Age                 From                Message
+  ----     ------                  ----                ----                -------
+  Normal   EnsuringLoadBalancer    9s (x6 over 3m17s)  service-controller  Ensuring load balancer
+  Warning  SyncLoadBalancerFailed  0s (x6 over 3m16s)  service-controller  Error syncing load balancer: failed to ensure load balancer: only TCP LoadBalancer is supported for openstack load balancers
+[join@localhost geekbrains-containers-home]$ k get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+factorio-server-7db64588b9-6lgtd   1/1     Running   0          25m
+[join@localhost geekbrains-containers-home]$ k get deployments
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+factorio-server   1/1     1            1           30m
+[join@localhost 3.k8s-intro]$ k set image deployment/factorio-server factorio=factoriotools/factorio:latest
+deployment.apps/factorio-server image updated
+[join@localhost 3.k8s-intro]$ k rollout status deployment/factorio-server
+deployment "factorio-server" successfully rolled out
+[join@localhost 3.k8s-intro]$ k get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+factorio-server-6cbbdc8dd8-xwc7b   1/1     Running   0          46s
+[join@localhost 3.k8s-intro]$ k rollout history deployment.v1.apps/factorio-server
+deployment.apps/factorio-server
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+
+[join@localhost 3.k8s-intro]$ k rollout undo deployment/factorio-server
+deployment.apps/factorio-server rolled back
+[join@localhost 3.k8s-intro]$ k get pods
+NAME                               READY   STATUS              RESTARTS   AGE
+factorio-server-558547b8c5-wp676   0/1     ContainerCreating   0          5s
+factorio-server-6cbbdc8dd8-xwc7b   1/1     Running             0          2m29s
+[join@localhost 3.k8s-intro]$ k get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+factorio-server-558547b8c5-wp676   1/1     Running   0          29s
+[join@localhost 3.k8s-intro]$
+

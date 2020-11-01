@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: factorio-svc-tcp
+  labels:
+    run: factorio
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 27015
+    protocol: TCP
+  selector:
+    run: factorio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: factorio-svc-upd
+  labels:
+    run: factorio
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 34197
+    protocol: UDP
+  selector:
+    run: factorio
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: factorio-server
+spec:
+  selector:
+    matchLabels:
+      run: factorio
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        run: factorio
+    spec:
+      containers:
+      - image: factoriotools/factorio:0.18.34
+        name: factorio
+        ports:
+        - containerPort: 34197
+          protocol: UDP
+        - containerPort: 27015
+          protocol: TCP
+
