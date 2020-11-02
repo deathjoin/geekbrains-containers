@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-deployment
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      run: pg
+  template:
+    metadata:
+      labels:
+        run: pg
+    spec:
+      initContainers:
+      - image: busybox
+        name: mount-permission-fix
+        command: ['sh', '-c', 'chmod 777 /data']
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      containers:
+      - image: postgres:10.13
+        name: postgres
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-pass
+              key: password
+        - name: POSTGRES_USER
+          value: testuser 
+        - name: POSTGRES_DB
+          value: testdatabase
+        - name: PGDATA 
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: pgdata
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pgdata
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+

@@ -1,0 +1,163 @@
+[join@localhost 4.k8s-env-vol]$ vim pg-deployment.yaml
+[join@localhost 4.k8s-env-vol]$ k create secret generic db-pass \
+> --from-literal=password=testpassword
+The connection to the server localhost:8080 was refused - did you specify the right host or po                                                                                                                                        rt?
+
+[join@localhost 4.k8s-env-vol]$ !406
+export KUBECONFIG=~/kubeconfig-mcs.yaml
+
+[join@localhost 4.k8s-env-vol]$ k create secret generic db-pass --from-literal=password=testpassword
+secret/db-pass created
+
+[join@localhost 4.k8s-env-vol]$ vim pg-deployment.yaml
+
+[join@localhost 4.k8s-env-vol]$ k apply -f pg-deployment.yaml
+deployment.apps/pg-deployment created
+persistentvolumeclaim/pgdata created
+
+[join@localhost 4.k8s-env-vol]$ k describe pods
+Name:         pg-deployment-6d4ccbbb84-6wvhk
+Namespace:    default
+Node:         kubernetes-cluster-9091-default-group-0/10.0.0.16
+Start Time:   Mon, 02 Nov 2020 04:07:09 +0300
+Labels:       pod-template-hash=6d4ccbbb84
+              run=pg
+Annotations:  <none>
+Status:       Running
+IP:           10.100.161.68
+IPs:
+  IP:           10.100.161.68
+Controlled By:  ReplicaSet/pg-deployment-6d4ccbbb84
+Init Containers:
+  mount-permission-fix:
+    Container ID:  docker://d01ba57bd72ba8e2b3a53cdf583dc26b1974d1c68bfc85b34a6060aa8d69141e
+    Image:         busybox
+    Image ID:      docker-pullable://busybox@sha256:a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      chmod 777 /data
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Mon, 02 Nov 2020 04:07:30 +0300
+      Finished:     Mon, 02 Nov 2020 04:07:30 +0300
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /data from data (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-v8jc8 (ro)
+Containers:
+  postgres:
+    Container ID:   docker://4c42e35bbed469154863680ac3d9e51aead4207ef3ee0cc12028f1dbf59c8b23
+    Image:          postgres:10.13
+    Image ID:       docker-pullable://postgres@sha256:e3a02efdce3ec64cfdb76a8ff93ae14d3294e47a0203d8230c8853a3890fe340
+    Port:           5432/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Mon, 02 Nov 2020 04:07:51 +0300
+    Ready:          True
+    Restart Count:  0
+    Environment:
+      POSTGRES_PASSWORD:  <set to the key 'password' in secret 'db-pass'>  Optional: false
+      POSTGRES_USER:      testuser
+      POSTGRES_DB:        testdatabase
+      PGDATA:             /var/lib/postgresql/data/pgdata
+    Mounts:
+      /var/lib/postgresql/data from data (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-v8jc8 (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  data:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  pgdata
+    ReadOnly:   false
+  default-token-v8jc8:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-v8jc8
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     <none>
+Events:
+  Type     Reason                  Age   From                     Message
+  ----     ------                  ----  ----                     -------
+  Warning  FailedScheduling        106s  default-scheduler        persistentvolumeclaim "pgdata" not found
+  Warning  FailedScheduling        105s  default-scheduler        persistentvolumeclaim "pgdata" not found
+  Warning  FailedScheduling        101s  default-scheduler        pod has unbound immediate PersistentVolumeClaims (repeated 2 times)
+  Normal   Scheduled               93s   default-scheduler        Successfully assigned default/pg-deployment-6d4ccbbb84-6wvhk to kubernetes-cluster-9091-default-group-0
+  Normal   SuccessfulAttachVolume  88s   attachdetach-controller  AttachVolume.Attach succeeded for volume "pvc-e8a2856a-a630-48dc-a807-2bb9bd6a4fa6"
+  Normal   Pulling                 79s   kubelet                  Pulling image "busybox"
+  Normal   Pulled                  75s   kubelet                  Successfully pulled image "busybox"
+  Normal   Created                 73s   kubelet                  Created container mount-permission-fix
+  Normal   Started                 73s   kubelet                  Started container mount-permission-fix
+  Normal   Pulling                 72s   kubelet                  Pulling image "postgres:10.13"
+  Normal   Pulled                  56s   kubelet                  Successfully pulled image "postgres:10.13"
+  Normal   Created                 53s   kubelet                  Created container postgres
+  Normal   Started                 52s   kubelet                  Started container postgres
+
+[join@localhost 4.k8s-env-vol]$ k get pods -o wide
+NAME                             READY   STATUS    RESTARTS   AGE     IP              NODE                                      NOMINATED 
+pg-deployment-6d4ccbbb84-6wvhk   1/1     Running   0          4m49s   10.100.161.68   kubernetes-cluster-9091-default-group-0   
+[join@localhost 4.k8s-env-vol]$
+
+[join@localhost 4.k8s-env-vol]$ kubectl run -t -i --rm --image postgres:10.13 test bash
+If you don't see a command prompt, try pressing enter.
+root@test:/# psql -h 10.100.161.68 -U testuser testdatabase
+Password for user testuser:
+psql (10.13 (Debian 10.13-1.pgdg90+1))
+Type "help" for help.
+
+testdatabase=# CREATE TABLE testtable (testcolumn VARCHAR (50) );
+CREATE TABLE
+testdatabase=# \dt
+           List of relations
+ Schema |   Name    | Type  |  Owner
+--------+-----------+-------+----------
+ public | testtable | table | testuser
+(1 row)
+
+testdatabase=# exit
+testdatabase-# \q
+root@test:/# exit
+exit
+Session ended, resume using 'kubectl attach test -c test -i -t' command when the pod is running
+pod "test" deleted
+
+[join@localhost 4.k8s-env-vol]$ k delete pod pg-deployment-6d4ccbbb84-6wvhk
+pod "pg-deployment-6d4ccbbb84-6wvhk" deleted
+
+[join@localhost 4.k8s-env-vol]$ k get pods -o wide
+NAME                             READY   STATUS        RESTARTS   AGE    IP              NODE                                      NOMINATED 
+pg-deployment-6d4ccbbb84-zr7jg   1/1     Running       0          101s   10.100.90.134   kubernetes-cluster-9091-default-group-1   
+test                             0/1     Terminating   0          69s    10.100.161.69   kubernetes-cluster-9091-default-group-0   
+
+[join@localhost 4.k8s-env-vol]$ kubectl run -t -i --rm --image postgres:10.13 test bash
+If you don't see a command prompt, try pressing enter.
+root@test:/# psql -h  10.100.90.134 -U testuser testdatabase
+Password for user testuser:
+psql (10.13 (Debian 10.13-1.pgdg90+1))
+Type "help" for help.
+
+testdatabase=# \dt
+           List of relations
+ Schema |   Name    | Type  |  Owner
+--------+-----------+-------+----------
+ public | testtable | table | testuser
+(1 row)
+
+testdatabase=# \q
+root@test:/# exit
+exit
+Session ended, resume using 'kubectl attach test -c test -i -t' command when the pod is running
+pod "test" deleted
+[join@localhost 4.k8s-env-vol]$
+
